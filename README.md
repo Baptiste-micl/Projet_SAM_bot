@@ -1,5 +1,5 @@
 # Projet_SAM_bot
-------------------------------------------------------------------
+
 📌 Description
 Ce projet consiste à développer un robot autonome capable de suivre une ligne tracée au sol à l’aide de capteurs. L’objectif est de mettre en œuvre un système embarqué combinant électronique, programmation en C et contrôle moteur.
 
