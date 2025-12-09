@@ -1,8 +1,10 @@
 #include <msp430.h>
 
-// Déclaration des variables
+// Déclaration des variables compteur.
 volatile unsigned int compteur_gauche = 0;
 volatile unsigned int compteur_droit = 0;
+
+//Déclaration des variables pour l'état de base.
 unsigned char etat1_gauche = 1;
 unsigned char etat1_droit  = 1;
 
@@ -10,6 +12,8 @@ unsigned char etat1_droit  = 1;
 volatile int erreur_integrale = 0;
 volatile int erreur_precedente = 0;
 
+
+// Les moteurs sont déclarés dans le sens de rotation physique du robot.
 void moteur_arriere_gauche(){
     P2OUT |= BIT1;
     P2OUT &= ~BIT1;
@@ -85,13 +89,12 @@ int main(void) {
             // Erreur = différence entre les compteurs
             int erreur = compteur_gauche - compteur_droit;
 
-            // Calcul PID
             // Proportionnel
             int correction_P = erreur * 3;  // Kp = 3
 
             // Intégral (accumulation de l'erreur)
             erreur_integrale += erreur;
-            // Limiter l'intégrale pour éviter le windup
+            // Limiter l'intégrale pour éviter la saturation
             if (erreur_integrale > 50) erreur_integrale = 50;
             if (erreur_integrale < -50) erreur_integrale = -50;
             int correction_I = erreur_integrale / 2;  // Ki = 0.5
