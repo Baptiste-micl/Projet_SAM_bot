@@ -2,7 +2,7 @@
 #include "ADC.h"
 #include "Afficheur.h"
 
-#define 
+#define INFRA_RED BIT1
 #define VREF 5.0
 #define ADC_MAX 1023.0
 
@@ -13,7 +13,7 @@ unsigned int return_distance_mm(void)
     float distance_cm;
     unsigned int distance_mm;
 
-    P1DIR &= ~BIT1;   // Entrée (capteur)
+    P1DIR &= ~INFRA_RED;   // Entrée (capteur)
     ADC_init();
 
     ADC_Demarrer_conversion(1);
@@ -39,7 +39,7 @@ unsigned int return_distance_mm(void)
     return distance_mm;
 }
 
-void main() {
+void main_test_infra_rouge() {
     WDTCTL = WDTPW | WDTHOLD;
 
     Aff_Init();   //initialisation des methodes
