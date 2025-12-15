@@ -1,48 +1,55 @@
 #include <msp430.h>
+#include "ADC.h"
 #include "Afficheur.h"
-#include  "ADC.h"
 
+#define 
+#define VREF 5.0
+#define ADC_MAX 1023.0
 
+unsigned int return_distance_mm(void)
+{
+    unsigned int adc_value;
+    float voltage;
+    float distance_cm;
+    unsigned int distance_mm;
 
-int return_distance(){
-    P1DIR &=~ BIT1; //(infra)(configurer en entrée)
-    P1DIR|=BIT0; // configurer en sortie
-
-    Aff_Init();   //initialisation des methodes
-    ADC_init();  //initialisation des methodes
-
-    unsigned int infra;             //variable pour la temperature
-    volatile unsigned int i;        // volatile to prevent optimization
+    P1DIR &= ~BIT1;   // Entrée (capteur)
+    ADC_init();
 
     ADC_Demarrer_conversion(1);
-    infra=ADC_Lire_resultat();
-    Aff_valeur(convert_Hex_Dec(infra));
+    adc_value = ADC_Lire_resultat();
 
-    return convert_Hex_Dec(infra);
+    // Conversion ADC -> tension
+    voltage = (adc_value * VREF) / ADC_MAX;
+
+    // Sécurité (évite division par zéro)
+    if (voltage < 0.45)
+        voltage = 0.45;
+
+    // Formule issue de la datasheet (approximation)
+    distance_cm = 27.86 / (voltage - 0.42);
+
+    // Limitation plage capteur
+    if (distance_cm < 4)  distance_cm = 4;
+    if (distance_cm > 30) distance_cm = 30;
+
+    // Conversion en millimètres
+    distance_mm = (unsigned int)(distance_cm * 10);
+
+    return distance_mm;
 }
 
-
-void main_test_infra_red(void)
-{
-    WDTCTL = WDTPW | WDTHOLD;       // stop watchdog timer
-
-    //definition des entrees et sorties
-
-    P1DIR &=~ BIT1; //(infra)(configurer en entrée)
-    P1DIR|=BIT0; // configurer en sortie
+void main() {
+    WDTCTL = WDTPW | WDTHOLD;
 
     Aff_Init();   //initialisation des methodes
-    ADC_init();  //initialisation des methodes
+    ADC_init();
+        int i;
+        while(1)
+        {
+            Aff_valeur(convert_Hex_Dec(return_distance_mm()));
+            for(i=1000;i>0;i--);
+        }
 
-    unsigned int infra;             //variable pour la temperature
-    volatile unsigned int i;        // volatile to prevent optimization
 
-    while(1)
-    {
-        ADC_Demarrer_conversion(1);
-          infra=ADC_Lire_resultat();
-          Aff_valeur(convert_Hex_Dec(infra));
-        P1OUT ^= 0x01;              // eteindre P1.0
-        for(i=10000; i>0; i--);     // delay
-    }
 }
