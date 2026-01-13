@@ -1,0 +1,236 @@
+#include <msp430.h>
+
+
+//choisir un autre port ^pour le capteur d'obstacle.
+
+
+
+/*  DEFINITIONS des constantes */
+
+#define VITESSE_AVANCE 700
+#define VITESSE_TOURNE 500
+
+#define CAPTEUR_GAUCHE BIT1   // P1.1
+#define CAPTEUR_DROITE BIT0   // P1.0
+#define CAPTEUR_OBS BIT2  //P1.2
+#define SEUIL_OBSTACLE 800 
+
+/*fonction declare pour l'arret automatique */
+volatile unsigned int secondes = 0;
+volatile unsigned char stop = 0;
+
+
+/*FONCTIONS MOTEURS */
+
+void moteur_A_avant(void)
+{
+    P2OUT |= BIT1;
+    P2OUT &= ~BIT0;
+}
+
+void moteur_A_arriere(void)
+{
+    P2OUT |= BIT0;
+    P2OUT &= ~BIT1;
+}
+
+void moteur_B_avant(void)
+{
+    P2OUT |= BIT5;
+    P2OUT &= ~BIT3;
+}
+
+void moteur_B_arriere(void)
+{
+    P2OUT |= BIT3;
+    P2OUT &= ~BIT5;
+}
+
+/* direction et sens que les moteurs doivent suivrent */
+
+void avancer(void)
+{
+    moteur_A_arriere();
+    moteur_B_avant();
+    TA1CCR1 = VITESSE_AVANCE;
+    TA1CCR2 = VITESSE_AVANCE;
+}
+
+void tourner_gauche(void)
+{
+    moteur_A_avant();
+    moteur_B_avant();
+    TA1CCR1 = VITESSE_TOURNE;
+    TA1CCR2 = VITESSE_TOURNE;
+}
+
+void tourner_droite(void)
+{
+    moteur_A_arriere();
+    moteur_B_arriere();
+    TA1CCR1 = VITESSE_TOURNE;
+    TA1CCR2 = VITESSE_TOURNE;
+}
+
+void stop_moteurs(void)
+{
+    TA1CCR1 = 0;
+    TA1CCR2 = 0;
+
+    // coupe TOUTES les directions moteurs (en mettant 0 dans le registre pour les bits correspondant)
+      P2OUT &= ~(BIT0 | BIT1 | BIT3 | BIT5);
+}
+
+/*Fonction pour lire la distance*/
+/*
+ * ADC10CTL0 C’est le registre de contrôle principal de l’ADC10.
+ * ENC (Enable Conversion)
+   Autorise l’ADC à effectuer une conversion
+   Doit être à 1 pour lancer l’ADC
+ *
+ * ADC10SC (Start Conversion) Démarre immédiatement la conversion analogique → numérique
+ *
+ * ADC10CTL1 :Deuxième registre de contrôle de l’ADC
+
+🔹 ADC10BUSY :Bit indicateur
+
+= 1 → conversion en cours
+= 0 → conversion terminée
+
+ADC10MEM: Registre mémoire de l’ADC,Contient le résultat final de la conversion.
+ */
+unsigned int lire_distance(void)
+{
+    ADC10CTL0 |= ENC + ADC10SC;         // start conversion
+    while (ADC10CTL1 & ADC10BUSY);      // attendre fin
+    return ADC10MEM;
+}
+
+
+/*PROGRAMME PRINCIPAL*/
+
+int main(void)
+
+
+{
+    WDTCTL = WDTPW | WDTHOLD;   // Stop watchdog
+    /*HORLOGE 1 MHz */
+    BCSCTL1 = CALBC1_1MHZ;
+    DCOCTL  = CALDCO_1MHZ;
+
+    /*pour lire les valeurs
+     *
+     * ADC10CTL1:Registre de contrôle n°1 de l’ADC10.
+             🔹 INCH_2:Signifie Input Channel 2 ,Correspond à la broche A2 → P1.2
+     *
+     * SREF_0 → Source de référence
+      SREF_0 = référence Vcc / GND
+     *
+     * ADC10SHT_3 → Temps d’échantillonnage ,Définit le temps pendant lequel l’ADC “écoute” le signal
+      ADC10SHT_3 = 64 cycles ADC
+     * ADC10ON → Activation de l’ADC,Met l’ADC sous tension
+     * ADC10AE0:Registre d’activation analogique
+     *
+     * */
+    ADC10CTL1 = INCH_2;                    // canal A2 (P1.2)
+    ADC10CTL0 = SREF_0 | ADC10SHT_3 | ADC10ON;
+    ADC10AE0 |= BIT2;                      // active A2
+
+
+    /*TIMER A0 POUR 1 SECONDE pour l'arret automatique
+     * TACLR → Remise à zéro
+       Réinitialise le compteur du timer
+       Efface les anciens réglages internes
+     *
+     * */
+    TA0CTL = TASSEL_2 | ID_3 | MC_1 | TACLR; // SMCLK /8, mode UP
+    TA0CCR0 = 125000 - 1;                  // 1 MHz / 8 = 125 kHz → 1 s
+    TA0CCTL0 = CCIE;                       // interruption activée
+
+
+    /* SORTIES MOTEURS  */
+    P2DIR |= (BIT0 | BIT1 | BIT3 | BIT5); // direction moteurs
+
+    /*PWM SUR P2.4 (TA1.1) et P2.2 (TA1.2)*/
+    P2DIR |= (BIT2 | BIT4);
+    P2SEL |= (BIT2 | BIT4);
+    P2SEL2 &= ~(BIT2 | BIT4);
+
+    TA1CTL = TASSEL_2 | MC_1;     // SMCLK, mode UP
+    TA1CCR0 = 2250;               // période PWM
+    TA1CCTL1 = OUTMOD_7;          // reset/set
+    TA1CCTL2 = OUTMOD_7;
+
+    TA1CCR1 = 0;
+    TA1CCR2 = 0;
+
+    /*CAPTEURS DE LIGNE et d'obstacle*/
+    P1DIR &= ~(CAPTEUR_GAUCHE | CAPTEUR_DROITE | CAPTEUR_OBS); // entrées
+    P1REN |=(CAPTEUR_GAUCHE | CAPTEUR_DROITE); // resistance pull-up
+    P1OUT |= (CAPTEUR_GAUCHE | CAPTEUR_DROITE); // pull-up
+
+    __enable_interrupt();
+
+    /*BOUCLE SUIVI DE LIGNE*/
+
+    unsigned int distance_adc = 0;
+    while (1)
+
+    {
+        unsigned int distance = lire_distance();
+        unsigned char gauche = !(P1IN & CAPTEUR_GAUCHE);
+        unsigned char droite = !(P1IN & CAPTEUR_DROITE);
+
+        //pour l'arret
+        if (stop)
+        {
+            stop_moteurs();
+            while (1); // arrêt définitif
+        }
+
+        ///////////////////////////////////////////////
+
+        if (distance > SEUIL_OBSTACLE)
+        {
+            stop_moteurs();
+        }
+
+        else if (gauche && droite)
+        {
+            avancer();          // ligne centrée
+        }
+        else if (gauche && !droite)
+        {
+            tourner_gauche();   // corrige à gauche
+        }
+        else if (!gauche && droite)
+        {
+            tourner_droite();   // corrige à droite
+        }
+        else
+        {
+            stop_moteurs();     // ligne perdue
+
+            __delay_cycles(1000);
+
+            tourner_droite();   // corrige à droite
+        }
+    }
+
+}
+
+//fonction pour l'interruption
+#pragma vector =TIMER0_A0_VECTOR
+
+    __interrupt void Timer_A0_ISR(void)
+    {
+        secondes++;
+
+        if (secondes >= 120)
+        {
+            stop= 1;     // drapeau d'arrêt
+            TA0CCTL0 &= ~CCIE; // désactive le timer
+        }
+    }
+
+
