@@ -6,12 +6,12 @@
 
 void suivre_ligne(void)
 {
-    unsigned char derniere_direction = 0;  // 0 = droite, 1 = gauche
+    //unsigned char derniere_direction = 0;  // 0 = droite, 1 = gauche
 
     while (1)
     {
         // Lecture des capteurs
-        /*unsigned int distance = lire_distance();*/
+        unsigned int distance = lire_distance();
         unsigned char gauche = lire_capteur_gauche();
         unsigned char droite = lire_capteur_droite();
 
@@ -23,12 +23,14 @@ void suivre_ligne(void)
         }*/
 
         // Détection d'obstacle
-        /*if (distance > SEUIL_OBSTACLE)
+
+        if (distance <= SEUIL_OBSTACLE)
         {
             stop_moteurs();
-        }*/
+        }
         // Ligne centrée : les deux capteurs détectent la ligne
-        if (gauche && droite)
+        else
+         if (gauche && droite)
         {
             avancer();
         }
@@ -36,17 +38,18 @@ void suivre_ligne(void)
         else if (gauche && !droite)
         {
             tourner_gauche();
-            derniere_direction = 1;  // Mémorise qu'on tournait à gauche
+            //derniere_direction = 1;  // Mémorise qu'on tournait à gauche
         }
         // Ligne à droite : corriger à droite
         else if (!gauche && droite)
         {
             tourner_droite();
-            derniere_direction = 0;  // Mémorise qu'on tournait à droite
+            //derniere_direction = 0;  // Mémorise qu'on tournait à droite
         }
         // Ligne perdue : continuer dans la dernière direction connue
         else
         {
+            /*
             if (derniere_direction == 1)
             {
                 tourner_gauche();  // Continue à gauche
@@ -55,6 +58,9 @@ void suivre_ligne(void)
             {
                 tourner_droite();  // Continue à droite
             }
+            */
+            stop_moteurs();
+
         }
 
     }

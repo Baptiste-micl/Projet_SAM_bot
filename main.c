@@ -4,7 +4,7 @@
 #include "sensors.h"
 #include "timer.h"
 #include "line_follower.h"
-
+#include "ADC.h"
 int main(void)
 {
     // Initialisation du watchdog
@@ -12,7 +12,6 @@ int main(void)
 
     // Initialisation de tous les modules
     init_clock();
-    init_adc();
     init_pwm();
     init_gpio_moteurs();
     init_gpio_capteurs();

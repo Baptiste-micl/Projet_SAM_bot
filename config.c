@@ -8,12 +8,6 @@ void init_clock(void)
     DCOCTL  = CALDCO_1MHZ;
 }
 
-void init_adc(void)
-{
-    ADC10CTL1 = INCH_2;                    // Canal A2 (P1.2)
-    ADC10CTL0 = SREF_0 | ADC10SHT_3 | ADC10ON;  // Vcc/GND, 64 cycles, ADC ON
-    ADC10AE0 |= BIT2;                      // Active A2 en entrée analogique
-}
 
 void init_pwm(void)
 {
@@ -45,7 +39,7 @@ void init_gpio_moteurs(void)
 void init_gpio_capteurs(void)
 {
     // Configuration des capteurs en entrée
-    P1DIR &= ~(CAPTEUR_GAUCHE | CAPTEUR_DROITE | CAPTEUR_OBS);
+    P1DIR &= ~(CAPTEUR_GAUCHE | CAPTEUR_DROITE | INFRA_RED);
 
     // Activation des résistances pull-up pour capteurs de ligne
     P1REN |= (CAPTEUR_GAUCHE | CAPTEUR_DROITE);

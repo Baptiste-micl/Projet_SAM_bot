@@ -4,16 +4,14 @@
 // Définitions des capteurs
 #define CAPTEUR_GAUCHE BIT1    // P1.1
 #define CAPTEUR_DROITE BIT0    // P1.0
-#define CAPTEUR_OBS    BIT2    // P1.2
-#define CATTEUR_RIGHT_ANALOG 0
-#define CATTEUR_LEFT_ANALOG 1
+#define INFRA_RED BIT2
+#define VREF 5.0
+#define ADC_MAX 1023.0
 
-#define SEUIL_MAX 1021
-#define SEUIL_MIN 100
 
 
 // Seuil de détection d'obstacle
-#define SEUIL_OBSTACLE 800
+#define SEUIL_OBSTACLE 150
 
 /**
  * Lit la distance du capteur d'obstacle via l'ADC
