@@ -3,6 +3,9 @@
 #include "config.h"
 #include "controls.h"
 #include "sensors.h"
+#include "exit_search.h"
+
+
 //#include "timer.h"
 //#include "line_follower.h"
 #include "ADC.h"
@@ -152,6 +155,9 @@ void main()
                break;
             case BOT_ARRET :
                 stop_moteurs();
+// RECHERCHE D'OBSTACLE
+                init_system();
+                exit_search();
                 etat_suivie = ARRET;
                break;
             }
