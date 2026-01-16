@@ -2,7 +2,7 @@
 #define CONFIG_H
 
 /**
- * Initialise l'horloge à 1 MHz
+ * Initialise l'horloge Ã  1 MHz
  */
 void init_clock(void);
 
@@ -25,5 +25,10 @@ void init_gpio_moteurs(void);
  * Configure les GPIO pour les capteurs de ligne
  */
 void init_gpio_capteurs(void);
+
+/*
+* Configure le robot pour la recherche de sortie
+*/
+void init_system(void);
 
 #endif
