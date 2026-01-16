@@ -2,6 +2,7 @@
 #include "sensors.h"
 #include "ADC.h"
 
+
 unsigned int lire_distance(void)
 {
     unsigned int adc_value;
@@ -11,12 +12,12 @@ unsigned int lire_distance(void)
     ADC_Demarrer_conversion(2);
     adc_value = ADC_Lire_resultat();
 
-    // ADC → tension
+    // ADC â†’ tension
     voltage = ((float)adc_value * VREF) / ADC_MAX;
 
-    // Sécurité capteur Sharp
+    // SÃ©curitÃ© capteur Sharp
     if (voltage < 0.5)
-        return 300;   // trop loin → 30 cm
+        return 300;   // trop loin â†’ 30 cm
 
     distance_cm = 27.86 / (voltage - 0.42);
 
@@ -30,12 +31,27 @@ unsigned int lire_distance(void)
 
 unsigned char lire_capteur_gauche(void)
 {
-    // Logique inversée : 0 = ligne détectée
+    // Logique inversÃ©e : 0 = ligne dÃ©tectÃ©e
     return !(P1IN & CAPTEUR_GAUCHE);
 }
 
 unsigned char lire_capteur_droite(void)
 {
-    // Logique inversée : 0 = ligne détectée
+    // Logique inversÃ©e : 0 = ligne dÃ©tectÃ©e
     return !(P1IN & CAPTEUR_DROITE);
+}
+
+
+// ---------- Capteur de lumière ----------
+
+unsigned int return_light_sensor(void)
+{
+    // Idéalement : config de la broche en entrée une seule fois au début
+    P1DIR &= ~CAPTEUR_LIGHT;      // P1.3 en entrée
+
+    unsigned int adc_value;
+    ADC_Demarrer_conversion(CAPTEUR_LIGHT_ANALOG);
+    adc_value = ADC_Lire_resultat();
+
+    return adc_value;
 }
