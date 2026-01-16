@@ -51,10 +51,21 @@ void tourner_droite(void)
 
 void stop_moteurs(void)
 {
-    // Arr�t du PWM
+    // Arrêt du PWM
     TA1CCR1 = 0;
     TA1CCR2 = 0;
 
     // Coupe toutes les directions moteurs
     P2OUT &= ~(BIT0 | BIT1 | BIT3 | BIT5);
+}
+
+void tourner_en_rond(void)
+{
+    // Ex : les deux moteurs même sens mais faible vitesse
+    P2OUT |=  BIT1;
+    P2OUT |=  BIT5;
+
+    TA1CCR0 = 2250;
+    TA1CCR1 = 250;
+    TA1CCR2 = 250;
 }
