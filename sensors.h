@@ -5,7 +5,7 @@
 #define CAPTEUR_GAUCHE BIT1    // P1.1
 #define CAPTEUR_DROITE BIT2    // P1.2
 
-#define INFRA_RED BIT2
+#define INFRA_RED BIT0
 #define VREF 5.0
 #define ADC_MAX 1023.0
 // Seuil de détection d'obstacle
@@ -14,7 +14,7 @@
 // Capteur de lumière
 #define CAPTEUR_LIGHT         BIT3
 #define CAPTEUR_LIGHT_ANALOG  3
-#define SEUIL_LUMIERE         1000
+#define SEUIL_LUMIERE         1023
 
 
 
@@ -46,3 +46,4 @@ unsigned int return_light_sensor(void);
 
 
 #endif
+
