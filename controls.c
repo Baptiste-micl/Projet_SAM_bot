@@ -59,6 +59,13 @@ void stop_moteurs(void)
     P2OUT &= ~(BIT0 | BIT1 | BIT3 | BIT5);
 }
 
+void avancer_un_peu(void)
+{
+    avancer();
+    __delay_cycles(300000);
+    stop_moteurs();
+}
+
 void tourner_en_rond(void)
 {
     // Ex : les deux moteurs même sens mais faible vitesse
@@ -69,3 +76,4 @@ void tourner_en_rond(void)
     TA1CCR1 = 250;
     TA1CCR2 = 250;
 }
+
