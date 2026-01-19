@@ -9,14 +9,19 @@
 #define CAPTEUR_GAUCHE BIT1   // P1.1
 #define CAPTEUR_DROITE BIT2   // P1.2
 
-#define CAPTEUR_LIGHT         BIT3   // P1.3
-#define CAPTEUR_LIGHT_ANALOG  3
+#define CAPTEUR_LIGHT         BIT4   // P1.4
+#define CAPTEUR_LIGHT_ANALOG  4
 #define SEUIL_LUMIERE         1023
 
 #define INFRA_RED BIT0        // P1.0
 #define SEUIL_OBSTACLE 200   // mm
 #define VREF 5.0
 #define ADC_MAX 1023.0
+/* ================== VARIABLES INTERRUPTION ================== */
+
+volatile unsigned int seconde = 0;
+volatile unsigned char timer_actif = 0;
+volatile unsigned char arret_force = 0;
 
 
 /* ================== ETATS ROBOT ================== */
@@ -25,7 +30,8 @@ typedef enum {
     MODE_SUIVI_LIGNE,
     MODE_CENTRE_CERCLE,
     MODE_RECHERCHE_LUMIERE,
-    MODE_AVANCE_LUMIERE
+   // MODE_AVANCE_LUMIERE
+    MODE_STOP_FINAL
 } etat_robot_t;
 
 /* ================== FONCTIONS MOTEURS ================== */
@@ -117,7 +123,7 @@ unsigned int return_distance_mm(void)
 /* ================== MAIN ================== */
 
 int main(void)
-  {
+     {
     WDTCTL = WDTPW | WDTHOLD;
 
     BCSCTL1 = CALBC1_1MHZ;
@@ -141,19 +147,49 @@ int main(void)
     P1REN |=  (CAPTEUR_GAUCHE | CAPTEUR_DROITE);
     P1OUT |=  (CAPTEUR_GAUCHE | CAPTEUR_DROITE);
 
+
+///////////////////////////////////////////////////////////////////////////////////////
+    /* BOUTON S2  pour l'interruption*/
+        P1DIR &= ~BIT3;
+        P1REN |= BIT3;
+        P1OUT |= BIT3;
+
+        P1IE  |= BIT3;
+        P1IES |= BIT3;
+        P1IFG &= ~BIT3;
+
+        /* TIMER 1s */
+        TA0CCR0 = 125000 - 1;
+        TA0CTL  = TASSEL_2 | ID_3 | MC_0;
+        TA0CCTL0 = CCIE;
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
     /* CAPTEUR LUMIERE */
     P1DIR &= ~CAPTEUR_LIGHT;
+
     ADC_init();
 
     __enable_interrupt();
 
+    int flag=0;
     etat_robot_t etat_robot = MODE_SUIVI_LIGNE;
 
     while (1)
     {
+
+        /* ===== Condition pour arreter le robot au bout de 60s ===== */
+        if (arret_force)
+                 {
+                     stop_moteurs();
+                     continue;
+                  }
+
         unsigned int distance = return_distance_mm();
         unsigned char gauche = !(P1IN & CAPTEUR_GAUCHE);
         unsigned char droite = !(P1IN & CAPTEUR_DROITE);
+
+
 
         /* ===== PRIORITÉ OBSTACLE ===== */
         if (distance < SEUIL_OBSTACLE)
@@ -172,8 +208,18 @@ int main(void)
                 break;
 
             case MODE_CENTRE_CERCLE:
-                avancer_un_peu();
-                etat_robot = MODE_RECHERCHE_LUMIERE;
+                if(flag==1){
+                   avancer_un_peu();
+                   etat_robot = MODE_STOP_FINAL;
+
+                                }
+                else if(flag==0){
+                    flag=1;
+                    avancer_un_peu();
+                    etat_robot = MODE_RECHERCHE_LUMIERE;
+                }
+
+
                 break;
 
             case MODE_RECHERCHE_LUMIERE:
@@ -181,19 +227,67 @@ int main(void)
                 if (return_light_sensor() >= SEUIL_LUMIERE)
                 {
                     stop_moteurs();
-                    __delay_cycles(200000);
-                    etat_robot = MODE_AVANCE_LUMIERE;
+                    __delay_cycles(2000);
+                    avancer_un_peu();
+                                   __delay_cycles(1000);
+                                   stop_moteurs();
+
+
+                                   etat_robot = MODE_SUIVI_LIGNE;
+                   // etat_robot = MODE_AVANCE_LUMIERE;
                 }
                 break;
 
-            case MODE_AVANCE_LUMIERE:
-                avancer_un_peu();
-                __delay_cycles(1000000);
-                stop_moteurs();
-                etat_robot = MODE_SUIVI_LIGNE;
-                break;
+           // case MODE_AVANCE_LUMIERE:
+
+                //break;
+            case MODE_STOP_FINAL:
+            stop_moteurs();
+            while (1);   // arrêt définitif
 
         }
     }
 
+}
+
+
+/* ================== INTERRUPTION BOUTON ================== */
+
+#pragma vector = PORT1_VECTOR
+__interrupt void PORT1_ISR(void)
+{
+    if (P1IFG & BIT3)
+    {
+        if (!timer_actif)
+        {
+            seconde = 0;
+            timer_actif = 1;
+            arret_force = 0;
+
+
+            TA0CTL |= MC_1;
+        }
+
+        P1IFG &= ~BIT3;
+    }
+}
+
+/* ================== INTERRUPTION TIMER ================== */
+
+#pragma vector = TIMER0_A0_VECTOR
+__interrupt void TIMER0_A0_ISR(void)
+{
+    if (timer_actif)
+    {
+        seconde++;
+
+        if (seconde >= 120)
+        {
+            stop_moteurs();
+            arret_force = 1;
+            timer_actif = 0;
+            TA0CTL &= ~MC_1;
+
+        }
+    }
 }
