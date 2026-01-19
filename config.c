@@ -41,7 +41,8 @@ void init_gpio_moteurs(void)
 void init_gpio_capteurs(void)
 {
     // Configuration des capteurs en entrée
-    P1DIR &= ~(CAPTEUR_GAUCHE | CAPTEUR_DROITE | INFRA_RED);
+    P1DIR &= ~(CAPTEUR_GAUCHE | CAPTEUR_DROITE);
+    P1DIR &= ~CAPTEUR_LIGHT;
 
     // Activation des résistances pull-up pour capteurs de ligne
     P1REN |= (CAPTEUR_GAUCHE | CAPTEUR_DROITE);
@@ -85,4 +86,5 @@ void init_system(void)
     // Init ADC une seule fois
     ADC_init();
 }
+
 
