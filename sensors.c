@@ -46,12 +46,7 @@ unsigned char lire_capteur_droite(void)
 
 unsigned int return_light_sensor(void)
 {
-    // Idéalement : config de la broche en entrée une seule fois au début
-    P1DIR &= ~CAPTEUR_LIGHT;      // P1.3 en entrée
-
-    unsigned int adc_value;
     ADC_Demarrer_conversion(CAPTEUR_LIGHT_ANALOG);
-    adc_value = ADC_Lire_resultat();
-
-    return adc_value;
+    return ADC_Lire_resultat();
 }
+
